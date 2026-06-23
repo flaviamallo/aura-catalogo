@@ -269,9 +269,14 @@ function openModal(id){
   if(!p)return;
   const colores=(p.color||'').split(',').map(c=>c.trim()).filter(Boolean);
   const talles=(p.talle||'').split(',').map(t=>t.trim()).filter(Boolean);
-  const img=p.fotoUrl?`<img src="${p.fotoUrl}" alt="${p.nombre}"/>`:`<div style="font-size:64px;color:var(--muted);opacity:.3">✦</div>`;
+  const fotos=p.fotoUrls&&p.fotoUrls.length?p.fotoUrls:(p.fotoUrl?[p.fotoUrl]:[]);
+  const imgPrincipal=fotos.length?`<img id="modal-main-img" src="${fotos[0]}" alt="${p.nombre}"/>`:`<div style="font-size:64px;color:var(--muted);opacity:.3">✦</div>`;
+  const galeria=fotos.length>1?`<div style="display:flex;gap:6px;padding:8px 14px;background:var(--bg2);overflow-x:auto;justify-content:center">
+    ${fotos.map((u,i)=>`<img src="${u}" onclick="switchFoto(this,'${u}')" style="height:56px;width:48px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid ${i===0?'var(--brand)':'var(--bg3)'};flex-shrink:0">`).join('')}
+  </div>`:'';
   document.getElementById('modal').innerHTML=`
-    <div class="modal-img">${img}</div>
+    <div class="modal-img">${imgPrincipal}</div>
+    ${galeria}
     <div class="modal-body">
       <button class="modal-close" onclick="closeModal()">×</button>
       <div class="modal-cat">${p.categoria||''} · ${p.modelo||''}</div>
