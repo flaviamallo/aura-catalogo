@@ -131,7 +131,7 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <div class="fr"><label>Categoría</label>
         <select id="fcat">
           <option>Pantalones</option><option>Remeras</option><option>Body</option>
-          <option>Deportivo</option><option>Vestidos</option><option>Accesorios</option>
+          <option>Deportivo</option><option>Vestidos</option><option>Polleras</option><option>Accesorios</option>
         </select>
       </div>
     </div>
@@ -191,7 +191,8 @@ async function guardar(){
   if(!nombre){alert('El nombre es obligatorio');return;}
   btn.disabled=true;btn.textContent='Guardando...';
   try{
-    const fotoUrl=$('fotoUrl').value.trim()||null;
+    const fotoUrls=$('fotoUrl').value.split('\n').map(u=>u.trim()).filter(Boolean).slice(0,5);
+    const fotoUrl=fotoUrls.length?fotoUrls[0]:null;
     const data={
       nombre,modelo:$('fmodel').value.trim(),
       descripcion:$('fdesc').value.trim(),
@@ -205,6 +206,7 @@ async function guardar(){
       fecha:firebase.firestore.FieldValue.serverTimestamp(),
     };
     if(fotoUrl)data.fotoUrl=fotoUrl;
+      if(fotoUrls.length>1)data.fotoUrls=fotoUrls;
     if(editId){await db.collection('productos').doc(editId).update(data);}
     else{await db.collection('productos').add(data);}
     resetForm();cargar();
@@ -253,7 +255,8 @@ function editar(id){
   $('fprecio').value=p.precio||'';
   $('fcat').value=p.categoria||'Pantalones';
   $('fprov').value=p.proveedor||'';
-  $('fotoUrl').value=p.fotoUrl||'';
+  const urls=p.fotoUrls||[];
+  $('fotoUrl').value=urls.length?urls.join('\n'):(p.fotoUrl||'');
   $('forden').value=p.orden||1;
   if(p.fotoUrl){$('prev').src=p.fotoUrl;$('prev').style.display='block';}
   window.scrollTo({top:0,behavior:'smooth'});

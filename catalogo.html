@@ -98,7 +98,7 @@ nav{
 .card-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:#2a1a10}
 .card-desc{font-size:12px;color:#6b4f3a;margin-top:3px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
-.tag-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#2a1a10;width:100%;margin-top:4px;margin-bottom:2px}
+.tag-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4A2D1F;width:100%;margin-top:4px;margin-bottom:2px;font-weight:600}
 .tag{font-size:11px;background:var(--bg);color:#2a1a10;border-radius:20px;padding:3px 10px;display:flex;align-items:center;gap:4px}
 .tag-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .card-footer{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 12px;background:#EDE5DA}
@@ -125,9 +125,9 @@ nav{
 .modal-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--brand);line-height:1.2;margin-bottom:8px}
 .modal-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px}
 .modal-attrs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.attr{background:var(--bg2);padding:10px 12px;border-radius:4px;border:1px solid var(--bg3)}
+.attr{background:var(--bg3);padding:10px 12px;border-radius:4px;border:1px solid var(--bg3)}
 .attr-l{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-.attr-v{font-size:13px;color:var(--brand)}
+.attr-v{font-size:13px;color:var(--text);font-weight:400}
 .modal-price{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--text);margin-bottom:16px}
 .modal-ws{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--brand);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-family:'Cormorant Garamond',serif;transition:background .15s}
 .modal-ws:hover{background:var(--brand2)}
@@ -286,6 +286,11 @@ function openModal(id){
     </div>`;
   document.getElementById('modal-ov').classList.add('open');
   document.body.style.overflow='hidden';
+}
+function switchFoto(el, url){
+  document.getElementById('modal-main-img').src=url;
+  document.querySelectorAll('[onclick^="switchFoto"]').forEach(e=>e.style.border='2px solid transparent');
+  el.style.border='2px solid var(--brand)';
 }
 function closeModal(){document.getElementById('modal-ov').classList.remove('open');document.body.style.overflow='';}
 
