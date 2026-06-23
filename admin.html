@@ -102,7 +102,8 @@ input:checked+.tslide:before{transform:translateX(16px)}
     <h2 id="form-title">Nuevo producto</h2>
     <div class="fr">
       <label>URL de foto (subila a imgbb.com y pegá el link directo)</label>
-      <input type="url" id="fotoUrl" placeholder="https://i.ibb.co/..." oninput="previewImg()"/>
+      <textarea id="fotoUrl" rows="4" placeholder="https://i.ibb.co/foto1.jpg&#10;https://i.ibb.co/foto2.jpg&#10;https://i.ibb.co/foto3.jpg" oninput="previewImg()" style="width:100%;padding:9px 12px;border:1px solid var(--border);font-size:13px;font-family:'Lato',sans-serif;color:var(--brand);background:var(--bg);outline:none;border-radius:4px;resize:vertical"></textarea>
+      <p class="hint">Podés poner hasta 5 fotos, una por línea</p>
       <p class="hint">Entrá a imgbb.com → subí la foto → click derecho en la imagen → "Copiar dirección de imagen"</p>
       <img id="prev" class="prev-img" alt=""/>
     </div>
@@ -174,7 +175,7 @@ function toggleForm(){const fc=$('form-card');if(fc.style.display==='none'){fc.s
 function cancelForm(){editId=null;$('form-card').style.display='none';resetForm();}
 function resetForm(){
   ['fname','fmodel','fdesc','fcolor','ftalle','fprecio','fprov'].forEach(id=>$(id).value='');
-  $('fcat').value='Pantalones';$('fotoUrl').value='';$('prev').style.display='none';
+  $('fcat').value='Pantalones';$('fotoUrl').value='';$('iprev').innerHTML='';$('iprev').style.display='none';
   $('prev').style.display='none';$('form-title').textContent='Nuevo producto';
   $('btn-guardar').textContent='Publicar en catálogo';editId=null;
 }
