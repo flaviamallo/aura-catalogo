@@ -104,6 +104,7 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <label>URL de foto (subila a imgbb.com y pegá el link directo)</label>
       <textarea id="fotoUrl" rows="4" placeholder="https://i.ibb.co/foto1.jpg&#10;https://i.ibb.co/foto2.jpg&#10;https://i.ibb.co/foto3.jpg" oninput="previewImg()" style="width:100%;padding:9px 12px;border:1px solid var(--border);font-size:13px;font-family:'Lato',sans-serif;color:var(--brand);background:var(--bg);outline:none;border-radius:4px;resize:vertical"></textarea>
       <p class="hint">Podés poner hasta 5 fotos, una por línea</p>
+      <div id="iprev" style="display:none;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
       <p class="hint">Entrá a imgbb.com → subí la foto → click derecho en la imagen → "Copiar dirección de imagen"</p>
       <img id="prev" class="prev-img" alt=""/>
     </div>
@@ -182,8 +183,13 @@ function resetForm(){
 }
 
 function previewImg(){
-  const v=$('fotoUrl').value.trim();
-  
+  const urls=$('fotoUrl').value.split('\n').map(u=>u.trim()).filter(Boolean).slice(0,5);
+  const pv=$('iprev');
+  if(!pv) return;
+  if(urls.length){
+    pv.style.display='flex';
+    pv.innerHTML=urls.map(u=>`<img src="${u}" style="height:70px;width:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-right:4px">`).join('');
+  }else{pv.style.display='none';pv.innerHTML='';}
 }
 
 async function guardar(){
