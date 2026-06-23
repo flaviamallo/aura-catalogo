@@ -132,6 +132,30 @@ nav{
 .modal-ws{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--brand);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-family:'Cormorant Garamond',serif;transition:background .15s}
 .modal-ws:hover{background:var(--brand2)}
 
+/* GALERÍA MODAL */
+.modal-img-wrap{position:relative;width:100%;background:var(--bg3);border-radius:8px 8px 0 0;overflow:hidden}
+.modal-img-wrap .modal-img{border-radius:0}
+.gallery-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:rgba(74,45,31,.55);color:#fff;border:none;
+  width:36px;height:36px;border-radius:50%;
+  font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  z-index:5;transition:background .15s;
+}
+.gallery-arrow:hover{background:rgba(74,45,31,.85)}
+.gallery-arrow.prev{left:10px}
+.gallery-arrow.next{right:10px}
+.gallery-dots{
+  display:flex;justify-content:center;gap:6px;
+  padding:8px 0 4px;background:var(--bg3);
+}
+.gallery-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--bg3);border:1.5px solid var(--brand);
+  cursor:pointer;transition:background .15s;flex-shrink:0;
+}
+.gallery-dot.active{background:var(--brand)}
+
 /* LOADING */
 .loading{text-align:center;padding:4rem;color:var(--muted);font-size:13px;letter-spacing:2px;grid-column:1/-1}
 
@@ -264,24 +288,41 @@ function renderGrid(){
   }).join('');
 }
 
+let galFotos=[];
+let galIdx=0;
+
 function openModal(id){
   const p=productos.find(x=>x.id===id);
   if(!p)return;
   const colores=(p.color||'').split(',').map(c=>c.trim()).filter(Boolean);
   const talles=(p.talle||'').split(',').map(t=>t.trim()).filter(Boolean);
-  let fotos=[];
+  galFotos=[];
   if(p.fotoUrls){
-    if(Array.isArray(p.fotoUrls)) fotos=p.fotoUrls;
-    else if(typeof p.fotoUrls==='string') fotos=p.fotoUrls.split('\n').map(u=>u.trim()).filter(Boolean);
+    if(Array.isArray(p.fotoUrls)) galFotos=p.fotoUrls;
+    else if(typeof p.fotoUrls==='string') galFotos=p.fotoUrls.split('\n').map(u=>u.trim()).filter(Boolean);
   }
-  if(!fotos.length && p.fotoUrl) fotos=[p.fotoUrl];
-  const imgPrincipal=fotos.length?`<img id="modal-main-img" src="${fotos[0]}" alt="${p.nombre}"/>`:`<div style="font-size:64px;color:var(--muted);opacity:.3">✦</div>`;
-  const galeria=fotos.length>1?`<div style="display:flex;gap:6px;padding:8px 14px;background:var(--bg2);overflow-x:auto;justify-content:center">
-    ${fotos.map((u,i)=>`<img src="${u}" onclick="switchFoto(this,'${u}')" style="height:56px;width:48px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid ${i===0?'var(--brand)':'var(--bg3)'};flex-shrink:0">`).join('')}
+  if(!galFotos.length && p.fotoUrl) galFotos=[p.fotoUrl];
+  galIdx=0;
+
+  const tieneGaleria=galFotos.length>1;
+  const imgPrincipal=galFotos.length
+    ?`<img id="modal-main-img" src="${galFotos[0]}" alt="${p.nombre}" style="width:100%;max-height:310px;object-fit:contain;display:block"/>`
+    :`<div style="font-size:64px;color:var(--muted);opacity:.3;padding:60px 0">✦</div>`;
+
+  const flechas=tieneGaleria?`
+    <button class="gallery-arrow prev" onclick="galNav(-1)">&#8249;</button>
+    <button class="gallery-arrow next" onclick="galNav(1)">&#8250;</button>`:'';
+
+  const dots=tieneGaleria?`<div class="gallery-dots" id="gallery-dots">
+    ${galFotos.map((_,i)=>`<span class="gallery-dot${i===0?' active':''}" onclick="galGo(${i})"></span>`).join('')}
   </div>`:'';
+
   document.getElementById('modal').innerHTML=`
-    <div class="modal-img">${imgPrincipal}</div>
-    ${galeria}
+    <div class="modal-img-wrap">
+      <div class="modal-img">${imgPrincipal}</div>
+      ${flechas}
+    </div>
+    ${dots}
     <div class="modal-body">
       <button class="modal-close" onclick="closeModal()">×</button>
       <div class="modal-cat">${p.categoria||''} · ${p.modelo||''}</div>
@@ -297,10 +338,15 @@ function openModal(id){
   document.getElementById('modal-ov').classList.add('open');
   document.body.style.overflow='hidden';
 }
-function switchFoto(el, url){
-  document.getElementById('modal-main-img').src=url;
-  document.querySelectorAll('[onclick^="switchFoto"]').forEach(e=>e.style.border='2px solid transparent');
-  el.style.border='2px solid var(--brand)';
+
+function galNav(dir){
+  galIdx=(galIdx+dir+galFotos.length)%galFotos.length;
+  galGo(galIdx);
+}
+function galGo(i){
+  galIdx=i;
+  document.getElementById('modal-main-img').src=galFotos[i];
+  document.querySelectorAll('.gallery-dot').forEach((d,idx)=>d.classList.toggle('active',idx===i));
 }
 function closeModal(){document.getElementById('modal-ov').classList.remove('open');document.body.style.overflow='';}
 
