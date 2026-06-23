@@ -213,7 +213,7 @@ async function guardar(){
       fecha:firebase.firestore.FieldValue.serverTimestamp(),
     };
     if(fotoUrl)data.fotoUrl=fotoUrl;
-      if(fotoUrls.length>1)data.fotoUrls=fotoUrls;
+    data.fotoUrls=fotoUrls;
     if(editId){await db.collection('productos').doc(editId).update(data);}
     else{await db.collection('productos').add(data);}
     resetForm();cargar();
