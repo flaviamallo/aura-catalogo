@@ -175,15 +175,15 @@ function toggleForm(){const fc=$('form-card');if(fc.style.display==='none'){fc.s
 function cancelForm(){editId=null;$('form-card').style.display='none';resetForm();}
 function resetForm(){
   ['fname','fmodel','fdesc','fcolor','ftalle','fprecio','fprov'].forEach(id=>$(id).value='');
-  $('fcat').value='Pantalones';$('fotoUrl').value='';const pv=$('iprev');if(pv){pv.innerHTML='';pv.style.display='none';}$('prev').style.display='none';
-  $('prev').style.display='none';$('form-title').textContent='Nuevo producto';
+  $('fcat').value='Pantalones';$('fotoUrl').value='';const pv2=$('iprev');if(pv2){pv2.innerHTML='';pv2.style.display='none';}
+  $('form-title').textContent='Nuevo producto';
   $('btn-guardar').textContent='Publicar en catálogo';editId=null;
+  previewImg();
 }
 
 function previewImg(){
   const v=$('fotoUrl').value.trim();
-  if(v){$('prev').src=v;$('prev').style.display='block';}
-  else{$('prev').style.display='none';}
+  
 }
 
 async function guardar(){
