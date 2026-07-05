@@ -38,6 +38,19 @@ nav{
 }
 .ncat:hover{border-color:var(--brand);color:var(--brand)}
 .ncat.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.subcatbar{
+  background:var(--bg2);display:flex;gap:6px;flex-wrap:wrap;
+  justify-content:center;padding:0 20px 14px;
+  border-bottom:1px solid var(--bg3);
+}
+.nsub{
+  font-size:12px;color:var(--muted);background:#fff;
+  border:1px solid var(--bg3);border-radius:14px;
+  padding:5px 14px;cursor:pointer;font-family:'Cormorant Garamond',serif;letter-spacing:.5px;
+  transition:.15s;white-space:nowrap;
+}
+.nsub:hover{border-color:var(--brand);color:var(--brand)}
+.nsub.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 .btn-adm{
   font-size:11px;color:var(--muted);background:#fff;
   border:1px solid #e8e0d8;border-radius:20px;
@@ -206,6 +219,9 @@ footer a:hover{opacity:1}
 <!-- CATS -->
 <div class="catbar" id="nav-cats"></div>
 
+<!-- SUBCATS -->
+<div class="subcatbar" id="nav-subcats" style="display:none"></div>
+
 <!-- COLECCIÓN -->
 <div class="coleccion" id="coleccion">
 
@@ -242,6 +258,7 @@ const db = firebase.firestore();
 
 let productos = [];
 let filtro = 'Todos';
+let subFiltro = 'Todos';
 
 // Colores para tags
 const COLORES_MAP = {
@@ -264,6 +281,7 @@ async function cargarProductos(){
     const snap = await db.collection('productos').orderBy('fecha','desc').get();
     productos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.activo!==false);
     renderCats();
+    renderSubcats();
     renderGrid();
   }catch(e){
     document.getElementById('grid').innerHTML='<div class="loading">Error al cargar. Verificá la conexión.</div>';
@@ -277,10 +295,27 @@ function renderCats(){
   ).join('');
 }
 
-function setFiltro(c){filtro=c;renderCats();renderGrid();}
+function renderSubcats(){
+  const cont=document.getElementById('nav-subcats');
+  if(filtro==='Todos'){cont.style.display='none';cont.innerHTML='';return;}
+  const subs=[...new Set(productos.filter(p=>(p.categoria||'Otros')===filtro && p.subrubro).map(p=>p.subrubro.trim()))];
+  if(!subs.length){cont.style.display='none';cont.innerHTML='';return;}
+  const opciones=['Todos',...subs];
+  cont.style.display='flex';
+  cont.innerHTML=opciones.map(s=>
+    `<button class="nsub${s===subFiltro?' on':''}" onclick="setSubFiltro('${s}')">${s}</button>`
+  ).join('');
+}
+
+function setFiltro(c){filtro=c;subFiltro='Todos';renderCats();renderSubcats();renderGrid();}
+function setSubFiltro(s){subFiltro=s;renderSubcats();renderGrid();}
 
 function renderGrid(){
-  const show=(filtro==='Todos'?productos:productos.filter(p=>(p.categoria||'Otros')===filtro)).sort((a,b)=>(a.orden||99)-(b.orden||99));
+  let show=(filtro==='Todos'?productos:productos.filter(p=>(p.categoria||'Otros')===filtro));
+  if(filtro!=='Todos' && subFiltro!=='Todos'){
+    show=show.filter(p=>(p.subrubro||'').trim()===subFiltro);
+  }
+  show=show.sort((a,b)=>(a.orden||99)-(b.orden||99));
   if(!show.length){
     document.getElementById('grid').innerHTML='<div class="loading">No hay productos en esta categoría.</div>';
     return;
