@@ -130,12 +130,21 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <div class="fr"><label>Orden en catálogo</label><input id="forden" type="number" placeholder="1" min="1"/></div>
     </div>
     <div class="fr2">
-      <div class="fr"><label>Categoría</label>
-        <select id="fcat">
-          <option>Pantalones</option><option>Remeras</option><option>Body</option><option>Buzos</option><option>Blazer<option>Blusas<option>Accesorios<option>Camisas<option>Conjuntos<option>Jean
+      <div class="fr"><label>Rubro</label>
+        <select id="fcat" onchange="updateSubrubros()">
+          <option>Pantalones</option><option>Remeras</option><option>Buzos</option><option>Body</option>
+          <option>Conjuntos</option><option>Jean</option><option>Pijamas</option>
           <option>Deportivo</option><option>Vestidos</option><option>Polleras</option><option>Accesorios</option>
         </select>
       </div>
+      <div class="fr"><label>Subrubro</label>
+        <select id="fsubrubro"><option value="">— Sin subrubro —</option></select>
+        <p class="hint">Se completa según el Rubro elegido. Se usa para el submenú del catálogo</p>
+      </div>
+    </div>
+    <div class="fr" id="fsubrubro-otro-wrap" style="display:none">
+      <label>Nuevo subrubro</label>
+      <input id="fsubrubro-otro" placeholder="Escribí el nombre del nuevo subrubro"/>
     </div>
     <div class="fr"><label>Proveedor (privado, no visible en catálogo)</label><input id="fprov" placeholder="Nombre del proveedor"/></div>
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -164,6 +173,37 @@ const db=firebase.firestore();
 const $=id=>document.getElementById(id);
 let editId=null;
 
+const SUBRUBROS_MAP={
+  'Deportivo':['Top','Conjunto','Calzas Capri','Calza larga lisa','Calza larga rayada','Calza larga oxford','Short','Musculosas','Remeras','Campera','Buzos'],
+  'Accesorios':['Pañuelos','Bufandones','Cintos'],
+};
+
+function updateSubrubros(valorActual){
+  const rubro=$('fcat').value;
+  const sel=$('fsubrubro');
+  const opciones=SUBRUBROS_MAP[rubro]||[];
+  sel.innerHTML='<option value="">— Sin subrubro —</option>'
+    +opciones.map(o=>`<option>${o}</option>`).join('')
+    +'<option value="__nuevo__">+ Agregar nuevo subrubro...</option>';
+  if(valorActual && opciones.includes(valorActual)){
+    sel.value=valorActual;
+  }else if(valorActual){
+    // subrubro guardado que no está en la lista predefinida: lo agregamos como opción extra
+    const opt=document.createElement('option');
+    opt.textContent=valorActual;opt.value=valorActual;
+    sel.insertBefore(opt,sel.lastElementChild);
+    sel.value=valorActual;
+  }else{
+    sel.value='';
+  }
+  $('fsubrubro-otro-wrap').style.display='none';
+  $('fsubrubro-otro').value='';
+}
+
+$('fsubrubro').addEventListener('change',()=>{
+  $('fsubrubro-otro-wrap').style.display=$('fsubrubro').value==='__nuevo__'?'block':'none';
+});
+
 function login(){
   if($('pinp').value===PASS){
     $('lockscreen').style.display='none';
@@ -177,6 +217,7 @@ function cancelForm(){editId=null;$('form-card').style.display='none';resetForm(
 function resetForm(){
   ['fname','fmodel','fdesc','fcolor','ftalle','fprecio','fprov'].forEach(id=>$(id).value='');
   $('fcat').value='Pantalones';$('fotoUrl').value='';const pv2=$('iprev');if(pv2){pv2.innerHTML='';pv2.style.display='none';}
+  updateSubrubros();
   $('form-title').textContent='Nuevo producto';
   $('btn-guardar').textContent='Publicar en catálogo';editId=null;
   previewImg();
@@ -200,6 +241,7 @@ async function guardar(){
   try{
     const fotoUrls=$('fotoUrl').value.split('\n').map(u=>u.trim()).filter(Boolean).slice(0,5);
     const fotoUrl=fotoUrls.length?fotoUrls[0]:null;
+    const subrubroVal=$('fsubrubro').value==='__nuevo__'?$('fsubrubro-otro').value.trim():$('fsubrubro').value;
     const data={
       nombre,modelo:$('fmodel').value.trim(),
       descripcion:$('fdesc').value.trim(),
@@ -208,6 +250,7 @@ async function guardar(){
       precio:parseFloat($('fprecio').value)||0,
       orden:parseInt($('forden').value)||99,
       categoria:$('fcat').value,
+      subrubro:subrubroVal,
       proveedor:$('fprov').value.trim(),
       activo:true,
       fecha:firebase.firestore.FieldValue.serverTimestamp(),
@@ -233,7 +276,7 @@ async function cargar(){
       <div class="prod-thumb">${p.fotoUrl?`<img src="${p.fotoUrl}" alt="${p.nombre}"/>`:'✦'}</div>
       <div class="prod-info">
         <div class="prod-name">${p.nombre||'—'}</div>
-        <div class="prod-sub">${p.categoria||''} · ${p.modelo||''} · $${p.precio?Number(p.precio).toLocaleString('es-AR'):0}</div>
+        <div class="prod-sub">${p.categoria||''}${p.subrubro?' · '+p.subrubro:''} · ${p.modelo||''} · $${p.precio?Number(p.precio).toLocaleString('es-AR'):0}</div>
         <div class="prod-sub" style="margin-top:2px">Talles: ${p.talle||'—'} &nbsp;·&nbsp; Colores: ${p.color||'—'}</div>
         <div class="prod-acts">
           <button class="abtn abtn-ed" onclick="editar('${p.id}')">Editar</button>
@@ -261,6 +304,7 @@ function editar(id){
   $('ftalle').value=p.talle||'';
   $('fprecio').value=p.precio||'';
   $('fcat').value=p.categoria||'Pantalones';
+  updateSubrubros(p.subrubro||'');
   $('fprov').value=p.proveedor||'';
   const urls=p.fotoUrls||[];
   $('fotoUrl').value=urls.length?urls.join('\n'):(p.fotoUrl||'');
