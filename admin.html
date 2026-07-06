@@ -93,7 +93,33 @@ input:checked+.tslide:before{transform:translateX(16px)}
     <h1>Gestión de productos</h1>
     <div class="hd-btns">
       <button class="btn btn-ghost btn-sm" onclick="window.location='catalogo.html'">← Catálogo</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleBanners()">🖼 Banners</button>
       <button class="btn btn-solid btn-sm" onclick="toggleForm()">+ Nuevo producto</button>
+    </div>
+  </div>
+
+  <!-- BANNERS -->
+  <div class="form-card" id="banner-card" style="display:none">
+    <h2>Banners de promoción</h2>
+    <p class="hint" style="margin-bottom:14px">Rotan arriba de todo en el catálogo. Subí las imágenes a imgbb.com como hacés con los productos. Tamaño recomendado: 1200x500px. Dejá el campo vacío si no querés usar ese banner.</p>
+    <div class="fr">
+      <label>Banner 1</label>
+      <input id="banner1" placeholder="https://i.ibb.co/....jpg" oninput="previewBanner(1)"/>
+      <img id="bprev1" class="prev-img" alt=""/>
+    </div>
+    <div class="fr">
+      <label>Banner 2</label>
+      <input id="banner2" placeholder="https://i.ibb.co/....jpg" oninput="previewBanner(2)"/>
+      <img id="bprev2" class="prev-img" alt=""/>
+    </div>
+    <div class="fr">
+      <label>Banner 3</label>
+      <input id="banner3" placeholder="https://i.ibb.co/....jpg" oninput="previewBanner(3)"/>
+      <img id="bprev3" class="prev-img" alt=""/>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-ghost" onclick="toggleBanners()">Cerrar</button>
+      <button class="btn btn-solid" id="btn-guardar-banners" onclick="guardarBanners()">Guardar banners</button>
     </div>
   </div>
 
@@ -210,6 +236,48 @@ function login(){
     $('adminpanel').style.display='block';
     cargar();
   }else{$('perr').textContent='Contraseña incorrecta.';}
+}
+
+function toggleBanners(){
+  const bc=$('banner-card');
+  if(bc.style.display==='none'){
+    bc.style.display='block';
+    cargarBanners();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }else{bc.style.display='none';}
+}
+
+function previewBanner(n){
+  const url=$('banner'+n).value.trim();
+  const img=$('bprev'+n);
+  if(url){img.src=url;img.style.display='block';}
+  else{img.style.display='none';img.src='';}
+}
+
+async function cargarBanners(){
+  try{
+    const doc=await db.collection('config').doc('banners').get();
+    const d=doc.exists?doc.data():{};
+    [1,2,3].forEach(n=>{
+      $('banner'+n).value=d['banner'+n]||'';
+      previewBanner(n);
+    });
+  }catch(e){console.error(e);}
+}
+
+async function guardarBanners(){
+  const btn=$('btn-guardar-banners');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    const data={
+      banner1:$('banner1').value.trim(),
+      banner2:$('banner2').value.trim(),
+      banner3:$('banner3').value.trim(),
+    };
+    await db.collection('config').doc('banners').set(data,{merge:true});
+    alert('Banners guardados. Ya se actualizaron en el catálogo.');
+  }catch(e){console.error(e);alert('Error al guardar: '+e.message);}
+  btn.disabled=false;btn.textContent='Guardar banners';
 }
 
 function toggleForm(){const fc=$('form-card');if(fc.style.display==='none'){fc.style.display='block';resetForm();}else{fc.style.display='none';}}
