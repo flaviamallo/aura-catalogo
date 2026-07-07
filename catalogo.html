@@ -410,7 +410,10 @@ function renderGrid(){
   }
   show=show.sort((a,b)=>(a.orden||99)-(b.orden||99));
   if(!show.length){
-    document.getElementById('grid').innerHTML='<div class="loading">No hay productos que coincidan con tu búsqueda.</div>';
+    let msg='No hay productos en esta categoría.';
+    if(busqueda) msg='No hay productos que coincidan con tu búsqueda.';
+    else if(!productos.length) msg='No se pudieron cargar los productos. Revisá tu conexión y volvé a intentar.';
+    document.getElementById('grid').innerHTML=`<div class="loading">${msg}</div>`;
     return;
   }
   document.getElementById('grid').innerHTML=show.map(p=>{
