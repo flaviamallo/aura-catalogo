@@ -153,9 +153,10 @@ input:checked+.tslide:before{transform:translateX(16px)}
     </div>
     <div class="fr2">
       <div class="fr"><label>Precio ($)</label><input id="fprecio" type="number" placeholder="0"/></div>
-      <div class="fr"><label>Orden en catálogo</label><input id="forden" type="number" placeholder="1" min="1"/></div>
+      <div class="fr"><label>Precio anterior (opcional, si hay descuento)</label><input id="fprecio2" type="number" placeholder="0"/></div>
     </div>
     <div class="fr2">
+      <div class="fr"><label>Orden en catálogo</label><input id="forden" type="number" placeholder="1" min="1"/></div>
       <div class="fr"><label>Rubro</label>
         <select id="fcat" onchange="updateSubrubros()">
           <option>Pantalones</option><option>Remeras</option><option>Buzos</option><option>Body</option>
@@ -163,6 +164,8 @@ input:checked+.tslide:before{transform:translateX(16px)}
           <option>Deportivo</option><option>Vestidos</option><option>Polleras</option><option>Accesorios</option>
         </select>
       </div>
+    </div>
+    <div class="fr2">
       <div class="fr"><label>Subrubro</label>
         <select id="fsubrubro"><option value="">— Sin subrubro —</option></select>
         <p class="hint">Se completa según el Rubro elegido. Se usa para el submenú del catálogo</p>
@@ -283,7 +286,7 @@ async function guardarBanners(){
 function toggleForm(){const fc=$('form-card');if(fc.style.display==='none'){fc.style.display='block';resetForm();}else{fc.style.display='none';}}
 function cancelForm(){editId=null;$('form-card').style.display='none';resetForm();}
 function resetForm(){
-  ['fname','fmodel','fdesc','fcolor','ftalle','fprecio','fprov'].forEach(id=>$(id).value='');
+  ['fname','fmodel','fdesc','fcolor','ftalle','fprecio','fprecio2','fprov'].forEach(id=>$(id).value='');
   $('fcat').value='Pantalones';$('fotoUrl').value='';const pv2=$('iprev');if(pv2){pv2.innerHTML='';pv2.style.display='none';}
   updateSubrubros();
   $('form-title').textContent='Nuevo producto';
@@ -316,6 +319,7 @@ async function guardar(){
       color:$('fcolor').value.trim(),
       talle:$('ftalle').value.trim(),
       precio:parseFloat($('fprecio').value)||0,
+      precio2:parseFloat($('fprecio2').value)||0,
       orden:parseInt($('forden').value)||99,
       categoria:$('fcat').value,
       subrubro:subrubroVal,
@@ -371,6 +375,7 @@ function editar(id){
   $('fcolor').value=p.color||'';
   $('ftalle').value=p.talle||'';
   $('fprecio').value=p.precio||'';
+  $('fprecio2').value=p.precio2||'';
   $('fcat').value=p.categoria||'Pantalones';
   updateSubrubros(p.subrubro||'');
   $('fprov').value=p.proveedor||'';
