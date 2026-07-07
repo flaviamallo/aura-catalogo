@@ -65,6 +65,15 @@ nav{
 .banner-dot.active{background:var(--brand)}
 
 
+.searchbar{background:var(--bg2);padding:14px 20px 4px;display:flex;justify-content:center}
+.searchbar input{
+  width:100%;max-width:560px;font-family:'Cormorant Garamond',serif;font-size:15px;
+  color:var(--text);background:#fff;border:1px solid var(--bg3);border-radius:20px;
+  padding:10px 18px;outline:none;transition:border-color .15s;
+}
+.searchbar input:focus{border-color:var(--brand)}
+.searchbar input::placeholder{color:var(--muted)}
+
 /* COLECCIÓN */
 .catbar{
   background:var(--bg2);display:flex;gap:8px;flex-wrap:wrap;
@@ -124,6 +133,8 @@ nav{
 .modal-body{padding:24px;background:var(--bg2)}
 .modal-close{position:absolute;top:12px;right:12px;background:var(--bg2);border:1px solid var(--bg3);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center}
 .modal-close:hover{background:var(--bg2)}
+.modal-share{position:absolute;top:12px;right:52px;background:var(--bg2);border:1px solid var(--bg3);border-radius:50%;width:32px;height:32px;cursor:pointer;color:var(--brand);display:flex;align-items:center;justify-content:center}
+.modal-share:hover{background:var(--bg3)}
 .modal-cat{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .modal-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--brand);line-height:1.2;margin-bottom:8px}
 .modal-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px}
@@ -182,6 +193,15 @@ nav{
 }
 .card-dot.active{background:var(--brand);border-color:var(--brand)}
 
+.card-share{
+  position:absolute;top:8px;right:8px;
+  background:rgba(74,45,31,.55);color:#fff;border:none;
+  width:26px;height:26px;border-radius:50%;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  z-index:6;transition:background .15s;
+}
+.card-share:hover{background:rgba(74,45,31,.85)}
+
 /* LOADING */
 .loading{text-align:center;padding:4rem;color:var(--muted);font-size:13px;letter-spacing:2px;grid-column:1/-1}
 
@@ -206,6 +226,11 @@ footer a:hover{opacity:1}
 <div class="banner-wrap" id="banner-wrap" style="display:none">
   <div class="banner-track" id="banner-track"></div>
   <div class="banner-dots" id="banner-dots"></div>
+</div>
+
+<!-- BUSCADOR -->
+<div class="searchbar">
+  <input id="search-input" type="text" placeholder="Buscar producto..." oninput="setBusqueda(this.value)"/>
 </div>
 
 <!-- CATS -->
@@ -251,6 +276,7 @@ const db = firebase.firestore();
 let productos = [];
 let filtro = 'Todos';
 let subFiltro = 'Todos';
+let busqueda = '';
 
 // Colores para tags
 const COLORES_MAP = {
@@ -340,6 +366,9 @@ async function cargarProductos(){
     renderCats();
     renderSubcats();
     renderGrid();
+    const params=new URLSearchParams(location.search);
+    const pid=params.get('producto');
+    if(pid && productos.some(p=>p.id===pid)) openModal(pid);
   }catch(e){
     document.getElementById('grid').innerHTML='<div class="loading">Error al cargar. Verificá la conexión.</div>';
   }
@@ -366,15 +395,22 @@ function renderSubcats(){
 
 function setFiltro(c){filtro=c;subFiltro='Todos';renderCats();renderSubcats();renderGrid();}
 function setSubFiltro(s){subFiltro=s;renderSubcats();renderGrid();}
+function setBusqueda(v){busqueda=v.trim().toLowerCase();renderGrid();}
 
 function renderGrid(){
   let show=(filtro==='Todos'?productos:productos.filter(p=>(p.categoria||'Otros')===filtro));
   if(filtro!=='Todos' && subFiltro!=='Todos'){
     show=show.filter(p=>(p.subrubro||'').trim()===subFiltro);
   }
+  if(busqueda){
+    show=show.filter(p=>{
+      const texto=[p.nombre,p.descripcion,p.categoria,p.subrubro,p.color,p.modelo].join(' ').toLowerCase();
+      return texto.includes(busqueda);
+    });
+  }
   show=show.sort((a,b)=>(a.orden||99)-(b.orden||99));
   if(!show.length){
-    document.getElementById('grid').innerHTML='<div class="loading">No hay productos en esta categoría.</div>';
+    document.getElementById('grid').innerHTML='<div class="loading">No hay productos que coincidan con tu búsqueda.</div>';
     return;
   }
   document.getElementById('grid').innerHTML=show.map(p=>{
@@ -393,7 +429,7 @@ function renderGrid(){
       <button class="card-arrow next" onclick="event.stopPropagation();cardNav('${p.id}',1)">&#8250;</button>
       <div class="card-dots">${fotos.map((_,i)=>`<span class="card-dot${i===0?' active':''}"></span>`).join('')}</div>`:'';
     return `<div class="card" onclick="openModal('${p.id}')">
-      <div class="card-img" id="cardimg-${p.id}" data-fotos='${JSON.stringify(fotos)}'>${img}${flechas}</div>
+      <div class="card-img" id="cardimg-${p.id}" data-fotos='${JSON.stringify(fotos)}'>${img}${flechas}<button class="card-share" onclick="event.stopPropagation();shareProduct('${p.id}')" title="Compartir">${shareico()}</button></div>
       <div class="card-body">
         <div class="card-name">${p.nombre||''}</div>
         <div class="card-desc">${p.descripcion||''}</div>
@@ -462,6 +498,7 @@ function openModal(id){
     ${dots}
     <div class="modal-body">
       <button class="modal-close" onclick="closeModal()">×</button>
+      <button class="modal-share" onclick="shareProduct('${p.id}')" title="Compartir">${shareico()}</button>
       <div class="modal-cat">${p.categoria||''} · ${p.modelo||''}</div>
       <div class="modal-name">${p.nombre||''}</div>
       <p class="modal-desc">${p.descripcion||''}</p>
@@ -513,6 +550,20 @@ function precioHTML(p,claseChica,claseGrande){
   const off=Math.round((1-menor/mayor)*100);
   return `<div class="price-row"><span class="${claseGrande}">${fmtPrecio(menor)}</span><span class="${claseChica}">${fmtPrecio(mayor)}</span><span class="price-off">-${off}%</span></div>`;
 }
+function shareico(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/></svg>`;}
+
+function shareProduct(id){
+  const p=productos.find(x=>x.id===id);
+  if(!p)return;
+  const link=`${location.origin}${location.pathname}?producto=${id}`;
+  const texto=`¡Mirá este producto de AURA Style! ✨\n*${p.nombre}*\n${link}`;
+  if(navigator.share){
+    navigator.share({title:p.nombre,text:texto,url:link}).catch(()=>{});
+  }else{
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`,'_blank');
+  }
+}
+
 function wsico(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;}
 
 cargarProductos();
