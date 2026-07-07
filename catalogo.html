@@ -56,7 +56,9 @@ nav{
 /* BANNER CARRUSEL */
 .banner-wrap{position:relative;width:100%;max-width:1000px;margin:0 auto;overflow:hidden;background:var(--bg2)}
 .banner-track{display:flex;transition:transform .5s ease}
-.banner-slide{width:100%;flex:0 0 100%;aspect-ratio:2.5/1;overflow:hidden}
+.banner-slide{width:100%;flex:0 0 100%;aspect-ratio:2.5/1;overflow:hidden;position:relative}
+.banner-cta{position:absolute;bottom:14px;right:14px;background:var(--brand);color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;display:flex;align-items:center;gap:6px;z-index:6;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.banner-cta:hover{background:var(--brand2)}
 .banner-slide img{width:100%;height:100%;object-fit:cover;display:block}
 .banner-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px}
 .banner-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.7);border:1.5px solid rgba(74,45,31,.8);cursor:pointer;flex-shrink:0}
@@ -279,7 +281,7 @@ function renderBanners(){
   const wrap=document.getElementById('banner-wrap');
   if(!banners.length){wrap.style.display='none';return;}
   wrap.style.display='block';
-  document.getElementById('banner-track').innerHTML=banners.map(u=>`<div class="banner-slide"><img src="${u}" alt="Promoción AURA Style"/></div>`).join('');
+  document.getElementById('banner-track').innerHTML=banners.map(u=>`<div class="banner-slide"><img src="${u}" alt="Promoción AURA Style"/><button class="banner-cta" onclick="event.stopPropagation();sendBannerWS()">${wsico()} Consultar</button></div>`).join('');
   document.getElementById('banner-dots').innerHTML=banners.length>1
     ?banners.map((_,i)=>`<span class="banner-dot${i===0?' active':''}" onclick="bannerGo(${i})"></span>`).join('')
     :'';
@@ -479,6 +481,11 @@ function galGo(i){
   document.querySelectorAll('.gallery-dot').forEach((d,idx)=>d.classList.toggle('active',idx===i));
 }
 function closeModal(){document.getElementById('modal-ov').classList.remove('open');document.body.style.overflow='';}
+
+function sendBannerWS(){
+  const msg=encodeURIComponent(`Hola AURA Style! ✨\nVi la promo del catálogo y quiero más info.`);
+  window.open(`https://wa.me/${WS}?text=${msg}`,'_blank');
+}
 
 function sendWS(id){
   const p=productos.find(x=>x.id===id);
