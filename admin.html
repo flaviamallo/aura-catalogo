@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -55,6 +56,15 @@ body{background:var(--bg);color:var(--brand);font-family:'Lato',sans-serif;font-
 .prod-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--brand)}
 .prod-sub{font-size:11px;color:var(--muted);letter-spacing:.5px;margin-top:2px}
 .prod-acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.orden-item{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:8px}
+.orden-item .orden-num{font-size:11px;color:var(--muted);width:18px}
+.orden-item .orden-nombre{flex:1;font-size:14px}
+.orden-item .orden-btns{display:flex;gap:4px}
+.orden-item button{width:28px;height:28px;border:1px solid var(--border);background:#fff;border-radius:4px;cursor:pointer;font-size:13px;color:var(--brand)}
+.orden-item button:disabled{opacity:.3;cursor:default}
+.orden-item button:not(:disabled):hover{background:var(--bg)}
+.orden-item button.btn-nuevo-on{background:#B06338;color:#fff;border-color:#B06338;width:auto;padding:0 10px}
+.orden-item button[title]{width:auto;padding:0 10px;font-size:12px}
 .tog-wrap{display:flex;align-items:center;gap:7px;margin-left:auto}
 .tog-label{font-size:10px;color:var(--muted);letter-spacing:1px}
 .tog{position:relative;display:inline-block;width:36px;height:20px}
@@ -94,6 +104,8 @@ input:checked+.tslide:before{transform:translateX(16px)}
     <div class="hd-btns">
       <button class="btn btn-ghost btn-sm" onclick="window.location='catalogo.html'">← Catálogo</button>
       <button class="btn btn-ghost btn-sm" onclick="toggleBanners()">🖼 Banners</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleOrdenRubros()">↕ Orden de rubros</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleRenameCard()">🔤 Renombrar categorías</button>
       <button class="btn btn-solid btn-sm" onclick="toggleForm()">+ Nuevo producto</button>
     </div>
   </div>
@@ -117,9 +129,67 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <input id="banner3" placeholder="https://i.ibb.co/....jpg" oninput="previewBanner(3)"/>
       <img id="bprev3" class="prev-img" alt=""/>
     </div>
+    <div class="fr">
+      <label>Banner 4</label>
+      <input id="banner4" placeholder="https://i.ibb.co/....jpg" oninput="previewBanner(4)"/>
+      <img id="bprev4" class="prev-img" alt=""/>
+    </div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn btn-ghost" onclick="toggleBanners()">Cerrar</button>
       <button class="btn btn-solid" id="btn-guardar-banners" onclick="guardarBanners()">Guardar banners</button>
+    </div>
+  </div>
+
+  <!-- ORDEN DE RUBROS Y SUBRUBROS -->
+  <div class="form-card" id="orden-card" style="display:none">
+    <h2>Orden de rubros en el catálogo</h2>
+    <p class="hint" style="margin-bottom:14px">Este orden define en qué secuencia aparecen los productos agrupados cuando alguien mira "Todos" en el catálogo (el menú desplegable siempre se muestra alfabético, esto no lo afecta). Usá las flechas para mover un rubro hacia arriba o abajo. Si aparece un rubro nuevo que todavía no ordenaste, se agrega solo al final (por orden alfabético) hasta que lo acomodes. Con el botón "☆ Nuevo" marcás un rubro o subrubro como novedad: le agrega la etiqueta "Nuevo" y lo sube arriba de todo, tanto en el menú desplegable como en la grilla, sin necesidad de moverlo a mano.</p>
+    <div id="orden-lista"></div>
+
+    <h2 style="margin-top:26px">Orden de subrubros</h2>
+    <p class="hint" style="margin-bottom:14px">Elegí un rubro para ordenar cómo aparecen sus subrubros agrupados en la grilla (ej: dentro de Deportivo, que primero se vean los Top, después Conjunto, después Calzas...).</p>
+    <div class="fr">
+      <label>Rubro</label>
+      <select id="orden-sub-rubro" onchange="cargarOrdenSubrubros()"></select>
+    </div>
+    <div id="orden-sub-lista"></div>
+
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-ghost" onclick="toggleOrdenRubros()">Cerrar</button>
+      <button class="btn btn-solid" id="btn-guardar-orden" onclick="guardarOrdenRubros()">Guardar orden</button>
+    </div>
+  </div>
+
+  <!-- RENOMBRAR / ELIMINAR RUBRO O SUBRUBRO -->
+  <div class="form-card" id="rename-card" style="display:none">
+    <h2>Renombrar o eliminar rubro/subrubro</h2>
+    <p class="hint" style="margin-bottom:14px">Cambiá el nombre de un rubro o subrubro que ya existe: se actualizan automáticamente todos los productos que lo usan, sin dejar duplicados. Para eliminar uno, primero tiene que quedar sin productos (renombralos o reasignalos).</p>
+    <div class="fr2">
+      <div class="fr">
+        <label>Tipo</label>
+        <select id="ren-tipo" onchange="renPoblarValores()">
+          <option value="rubro">Rubro</option>
+          <option value="subrubro">Subrubro</option>
+        </select>
+      </div>
+      <div class="fr" id="ren-rubro-wrap" style="display:none">
+        <label>Rubro</label>
+        <select id="ren-rubro" onchange="renPoblarValores()"></select>
+      </div>
+    </div>
+    <div class="fr">
+      <label id="ren-valor-label">Rubro a renombrar</label>
+      <select id="ren-valor" onchange="renContarProductos()"></select>
+    </div>
+    <div class="fr">
+      <label>Nuevo nombre</label>
+      <input id="ren-nuevo" placeholder="Escribí el nuevo nombre"/>
+    </div>
+    <p class="hint" id="ren-count"></p>
+    <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="toggleRenameCard()">Cerrar</button>
+      <button class="btn btn-ghost" id="btn-ren-eliminar" style="border-color:#f5c1c1;color:#b03030" onclick="eliminarCategoria()">Eliminar (solo si no tiene productos)</button>
+      <button class="btn btn-solid" onclick="renombrarCategoria()">Renombrar</button>
     </div>
   </div>
 
@@ -155,13 +225,43 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <div class="fr"><label>Precio ($)</label><input id="fprecio" type="number" placeholder="0"/></div>
       <div class="fr"><label>Precio anterior (opcional, si hay descuento)</label><input id="fprecio2" type="number" placeholder="0"/></div>
     </div>
+    <div class="fr">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;color:var(--brand)">
+        <input type="checkbox" id="fcuotas" onchange="toggleCuotas()" style="width:auto;accent-color:var(--brand)"/>
+        Habilitar cuotas sin interés
+      </label>
+    </div>
+    <div class="fr" id="fcuotas-wrap" style="display:none">
+      <label>Cantidad de cuotas</label>
+      <select id="fcuotasN">
+        <option value="3">3 cuotas</option>
+        <option value="6">6 cuotas</option>
+      </select>
+      <div class="fr" style="margin-top:12px;margin-bottom:0">
+        <label>Precio transferencia/efectivo ($)</label>
+        <input id="fpreciotransf" type="number" placeholder="0"/>
+        <p class="hint">Se muestra en el catálogo junto con el descuento calculado respecto al precio</p>
+      </div>
+    </div>
+    <div class="fr">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;color:var(--brand)">
+        <input type="checkbox" id="fpromocant" onchange="togglePromoCant()" style="width:auto;accent-color:var(--brand)"/>
+        Activar promo por cantidad
+      </label>
+    </div>
+    <div class="fr" id="fpromocant-wrap" style="display:none">
+      <label>Precio por cantidad</label>
+      <div id="promocant-rows"></div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="agregarTramoPromo()" style="margin-top:4px">+ Agregar tramo</button>
+      <p class="hint">La cantidad 1 usa el "Precio ($)" de arriba. Acá cargá desde 2 unidades en adelante. Ej: 2 unidades $27.000 · 3 unidades $36.000.</p>
+    </div>
     <div class="fr2">
       <div class="fr"><label>Orden en catálogo</label><input id="forden" type="number" placeholder="1" min="1"/></div>
       <div class="fr"><label>Rubro</label>
         <select id="fcat" onchange="updateSubrubros()">
-          <option>Pantalones</option><option>Remeras</option><option>Buzos</option><option>Body</option>
-          <option>Conjuntos</option><option>Jean</option><option>Pijamas</option>
-          <option>Deportivo</option><option>Vestidos</option><option>Polleras</option><option>Accesorios</option>
+          <option>Pantalones</option><option>Remeras</option><option>Buzos</option><option>Body</option><option>Calza larga</option>
+          <option>Conjuntos</option><option>Jean</option><option>Pijamas</option><option>Camperas</option>
+          <option>Deportivo</option><option>Blazer</option><option>Polleras</option><option>Accesorios</option><option>Camisas y Blusas</option><option>Polleras</option><option>Velas Aromáticas</option>
         </select>
       </div>
     </div>
@@ -180,6 +280,46 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <button class="btn btn-ghost" onclick="cancelForm()">Cancelar</button>
       <button class="btn btn-solid" id="btn-guardar" onclick="guardar()">Publicar en catálogo</button>
     </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="form-card" style="padding:16px 20px;margin-bottom:18px">
+    <div class="fr2" style="align-items:end">
+      <div class="fr" style="margin-bottom:0">
+        <label>Buscar por Rubro</label>
+        <select id="ffcat" onchange="updateFiltroSubrubro();aplicarFiltros();">
+          <option value="">Todos los rubros</option>
+          <option>Pantalones</option><option>Remeras</option><option>Buzos</option><option>Body</option>
+          <option>Conjuntos</option><option>Jean</option><option>Pijamas</option><option>Camperas</option>
+          <option>Deportivo</option><option>Blazer</option><option>Polleras</option><option>Accesorios</option><option>Camisas y Blusas</option><option>Polleras</option><option>Velas Aromáticas</option>
+        </select>
+      </div>
+      <div class="fr" style="margin-bottom:0">
+        <label>Buscar por Subrubro</label>
+        <select id="ffsubrubro" onchange="aplicarFiltros();">
+          <option value="">Todos los subrubros</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr2" style="align-items:end;margin-top:12px">
+      <div class="fr" style="margin-bottom:0">
+        <label>En cuotas</label>
+        <select id="ffcuotas" onchange="toggleFiltroCuotasN();aplicarFiltros();">
+          <option value="">Todos</option>
+          <option value="si">En cuotas</option>
+          <option value="no">Sin cuotas</option>
+        </select>
+      </div>
+      <div class="fr" id="ffcuotasN-wrap" style="margin-bottom:0;display:none">
+        <label>Cantidad de cuotas</label>
+        <select id="ffcuotasN" onchange="aplicarFiltros();">
+          <option value="">Cualquier cantidad</option>
+          <option value="3">3 cuotas</option>
+          <option value="6">6 cuotas</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="limpiarFiltros()">Limpiar filtros</button>
   </div>
 
   <!-- LISTA -->
@@ -203,14 +343,22 @@ const $=id=>document.getElementById(id);
 let editId=null;
 
 const SUBRUBROS_MAP={
-  'Deportivo':['Top','Conjunto','Calzas Capri','Calza larga lisa','Calza larga rayada','Calza larga oxford','Short','Musculosas','Remeras','Campera','Buzos'],
+  'Deportivo':['Top','Conjunto','Calzas Capri','Calza larga lisa','Calza larga rayada','Calza larga oxford','Short','Calzas Short','Musculosas','Remeras','Campera','Buzos'],
   'Accesorios':['Pañuelos','Bufandones','Cintos'],
 };
+
+function getSubrubrosDisponibles(rubro){
+  const base=SUBRUBROS_MAP[rubro]||[];
+  const usados=(window._prods||[])
+    .filter(p=>(p.categoria||'')===rubro && p.subrubro)
+    .map(p=>p.subrubro.trim());
+  return [...new Set([...base,...usados])];
+}
 
 function updateSubrubros(valorActual){
   const rubro=$('fcat').value;
   const sel=$('fsubrubro');
-  const opciones=SUBRUBROS_MAP[rubro]||[];
+  const opciones=getSubrubrosDisponibles(rubro);
   sel.innerHTML='<option value="">— Sin subrubro —</option>'
     +opciones.map(o=>`<option>${o}</option>`).join('')
     +'<option value="__nuevo__">+ Agregar nuevo subrubro...</option>';
@@ -261,7 +409,7 @@ async function cargarBanners(){
   try{
     const doc=await db.collection('config').doc('banners').get();
     const d=doc.exists?doc.data():{};
-    [1,2,3].forEach(n=>{
+    [1,2,3,4].forEach(n=>{
       $('banner'+n).value=d['banner'+n]||'';
       previewBanner(n);
     });
@@ -276,6 +424,7 @@ async function guardarBanners(){
       banner1:$('banner1').value.trim(),
       banner2:$('banner2').value.trim(),
       banner3:$('banner3').value.trim(),
+      banner4:$('banner4').value.trim(),
     };
     await db.collection('config').doc('banners').set(data,{merge:true});
     alert('Banners guardados. Ya se actualizaron en el catálogo.');
@@ -283,11 +432,192 @@ async function guardarBanners(){
   btn.disabled=false;btn.textContent='Guardar banners';
 }
 
+function esc(s){return String(s).replace(/'/g,"\\'");}
+
+let ordenRubrosActual=[];
+let subOrdenActual={}; // {Rubro: [subrubro1, subrubro2, ...]}
+let nuevosRubrosActual=new Set();
+let nuevosSubActual={}; // {Rubro: Set(subrubro1, subrubro2, ...)}
+
+function toggleOrdenRubros(){
+  const oc=$('orden-card');
+  if(oc.style.display==='none'){
+    oc.style.display='block';
+    cargarOrdenRubros();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }else{oc.style.display='none';}
+}
+
+async function cargarOrdenRubros(){
+  $('orden-lista').innerHTML='<div class="empty">Cargando...</div>';
+  try{
+    const doc=await db.collection('config').doc('categorias').get();
+    const d=doc.exists?doc.data():{};
+    const guardado=d.orden||[];
+    subOrdenActual=d.subOrden||{};
+    nuevosRubrosActual=new Set(d.nuevos||[]);
+    nuevosSubActual={};
+    Object.entries(d.nuevosSub||{}).forEach(([rubro,lista])=>{nuevosSubActual[rubro]=new Set(lista);});
+    // rubros que existen hoy en los productos, aunque todavía no se hayan ordenado
+    const usados=[...new Set((window._prods||[]).map(p=>p.categoria).filter(Boolean))];
+    const nuevos=usados.filter(c=>!guardado.includes(c)).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+    ordenRubrosActual=[...guardado.filter(c=>usados.includes(c)),...nuevos];
+    renderOrdenRubros();
+    poblarSelectSubrubros();
+  }catch(e){console.error(e);$('orden-lista').innerHTML='<div class="empty">Error al cargar.</div>';}
+}
+
+function renderOrdenRubros(){
+  const cont=$('orden-lista');
+  if(!ordenRubrosActual.length){cont.innerHTML='<div class="empty">Todavía no hay rubros cargados.</div>';return;}
+  cont.innerHTML=ordenRubrosActual.map((c,i)=>{
+    const esNuevo=nuevosRubrosActual.has(c);
+    return `
+    <div class="orden-item">
+      <span class="orden-num">${i+1}</span>
+      <span class="orden-nombre">${c}</span>
+      <div class="orden-btns">
+        <button title="Marcar como Nuevo (aparece arriba de todo en el menú)" class="${esNuevo?'btn-nuevo-on':''}" onclick="toggleNuevoRubro('${esc(c)}')">${esNuevo?'★ Nuevo':'☆ Nuevo'}</button>
+        <button onclick="moverRubro(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button onclick="moverRubro(${i},1)" ${i===ordenRubrosActual.length-1?'disabled':''}>↓</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function moverRubro(i,dir){
+  const j=i+dir;
+  if(j<0||j>=ordenRubrosActual.length)return;
+  [ordenRubrosActual[i],ordenRubrosActual[j]]=[ordenRubrosActual[j],ordenRubrosActual[i]];
+  renderOrdenRubros();
+}
+
+function toggleNuevoRubro(c){
+  if(nuevosRubrosActual.has(c)) nuevosRubrosActual.delete(c);
+  else nuevosRubrosActual.add(c);
+  renderOrdenRubros();
+}
+
+function poblarSelectSubrubros(){
+  const sel=$('orden-sub-rubro');
+  // solo tiene sentido para rubros que tienen subrubros cargados
+  const conSubs=ordenRubrosActual.filter(c=>getSubrubrosDisponibles(c).length>0);
+  if(!conSubs.length){
+    sel.innerHTML='<option value="">— Ningún rubro tiene subrubros —</option>';
+    $('orden-sub-lista').innerHTML='';
+    return;
+  }
+  sel.innerHTML=conSubs.map(c=>`<option value="${c}">${c}</option>`).join('');
+  cargarOrdenSubrubros();
+}
+
+function cargarOrdenSubrubros(){
+  const rubro=$('orden-sub-rubro').value;
+  if(!rubro){$('orden-sub-lista').innerHTML='';return;}
+  const guardado=subOrdenActual[rubro]||[];
+  const disponibles=getSubrubrosDisponibles(rubro);
+  const nuevos=disponibles.filter(s=>!guardado.includes(s)).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  subOrdenActual[rubro]=[...guardado.filter(s=>disponibles.includes(s)),...nuevos];
+  renderOrdenSubrubros();
+}
+
+function renderOrdenSubrubros(){
+  const rubro=$('orden-sub-rubro').value;
+  const lista=subOrdenActual[rubro]||[];
+  const cont=$('orden-sub-lista');
+  if(!lista.length){cont.innerHTML='<div class="empty">Este rubro no tiene subrubros.</div>';return;}
+  const nuevosDeRubro=nuevosSubActual[rubro]||new Set();
+  cont.innerHTML=lista.map((s,i)=>{
+    const esNuevo=nuevosDeRubro.has(s);
+    return `
+    <div class="orden-item">
+      <span class="orden-num">${i+1}</span>
+      <span class="orden-nombre">${s}</span>
+      <div class="orden-btns">
+        <button title="Marcar como Nuevo (aparece arriba de todo en el menú)" class="${esNuevo?'btn-nuevo-on':''}" onclick="toggleNuevoSubrubro('${esc(s)}')">${esNuevo?'★ Nuevo':'☆ Nuevo'}</button>
+        <button onclick="moverSubrubro(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button onclick="moverSubrubro(${i},1)" ${i===lista.length-1?'disabled':''}>↓</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function moverSubrubro(i,dir){
+  const rubro=$('orden-sub-rubro').value;
+  const lista=subOrdenActual[rubro];
+  const j=i+dir;
+  if(j<0||j>=lista.length)return;
+  [lista[i],lista[j]]=[lista[j],lista[i]];
+  renderOrdenSubrubros();
+}
+
+function toggleNuevoSubrubro(s){
+  const rubro=$('orden-sub-rubro').value;
+  if(!nuevosSubActual[rubro]) nuevosSubActual[rubro]=new Set();
+  const set=nuevosSubActual[rubro];
+  if(set.has(s)) set.delete(s);
+  else set.add(s);
+  renderOrdenSubrubros();
+}
+
+async function guardarOrdenRubros(){
+  const btn=$('btn-guardar-orden');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    const nuevosSubParaGuardar={};
+    Object.entries(nuevosSubActual).forEach(([rubro,set])=>{nuevosSubParaGuardar[rubro]=[...set];});
+    await db.collection('config').doc('categorias').set({
+      orden:ordenRubrosActual,
+      subOrden:subOrdenActual,
+      nuevos:[...nuevosRubrosActual],
+      nuevosSub:nuevosSubParaGuardar
+    },{merge:true});
+    alert('Orden guardado. Ya se actualizó en el catálogo.');
+  }catch(e){console.error(e);alert('Error al guardar: '+e.message);}
+  btn.disabled=false;btn.textContent='Guardar orden';
+}
+
+function toggleCuotas(){
+  $('fcuotas-wrap').style.display=$('fcuotas').checked?'block':'none';
+}
+
+let tramosPromo=[];
+function togglePromoCant(){
+  $('fpromocant-wrap').style.display=$('fpromocant').checked?'block':'none';
+  if($('fpromocant').checked && tramosPromo.length===0){
+    tramosPromo=[{cantidad:2,precio:0},{cantidad:3,precio:0}];
+  }
+  renderTramosPromo();
+}
+function renderTramosPromo(){
+  const cont=$('promocant-rows');
+  if(!cont)return;
+  cont.innerHTML=tramosPromo.map((t,i)=>`
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <input type="number" min="2" value="${t.cantidad}" placeholder="Cant." style="width:70px;padding:9px 10px;border:1px solid var(--border);font-size:13px;font-family:'Lato',sans-serif;color:var(--brand);background:#fff;border-radius:4px" oninput="tramosPromo[${i}].cantidad=parseInt(this.value)||2"/>
+      <span style="font-size:12px;color:var(--muted);white-space:nowrap">unid. →</span>
+      <input type="number" min="0" value="${t.precio}" placeholder="Precio" style="flex:1;padding:9px 12px;border:1px solid var(--border);font-size:13px;font-family:'Lato',sans-serif;color:var(--brand);background:#fff;border-radius:4px" oninput="tramosPromo[${i}].precio=parseFloat(this.value)||0"/>
+      <button type="button" class="abtn abtn-del" onclick="quitarTramoPromo(${i})">✕</button>
+    </div>
+  `).join('');
+}
+function agregarTramoPromo(){
+  const ultima=tramosPromo.length?tramosPromo[tramosPromo.length-1].cantidad:1;
+  tramosPromo.push({cantidad:Math.max(2,ultima+1),precio:0});
+  renderTramosPromo();
+}
+function quitarTramoPromo(i){
+  tramosPromo.splice(i,1);
+  renderTramosPromo();
+}
+
 function toggleForm(){const fc=$('form-card');if(fc.style.display==='none'){fc.style.display='block';resetForm();}else{fc.style.display='none';}}
 function cancelForm(){editId=null;$('form-card').style.display='none';resetForm();}
 function resetForm(){
   ['fname','fmodel','fdesc','fcolor','ftalle','fprecio','fprecio2','fprov'].forEach(id=>$(id).value='');
   $('fcat').value='Pantalones';$('fotoUrl').value='';const pv2=$('iprev');if(pv2){pv2.innerHTML='';pv2.style.display='none';}
+  $('fcuotas').checked=false;$('fcuotasN').value='3';$('fpreciotransf').value='';toggleCuotas();
+  $('fpromocant').checked=false;tramosPromo=[];togglePromoCant();
   updateSubrubros();
   $('form-title').textContent='Nuevo producto';
   $('btn-guardar').textContent='Publicar en catálogo';editId=null;
@@ -320,6 +650,11 @@ async function guardar(){
       talle:$('ftalle').value.trim(),
       precio:parseFloat($('fprecio').value)||0,
       precio2:parseFloat($('fprecio2').value)||0,
+      cuotasHabilitado:$('fcuotas').checked,
+      cuotasCantidad:$('fcuotas').checked?parseInt($('fcuotasN').value):0,
+      precioTransferencia:$('fcuotas').checked?(parseFloat($('fpreciotransf').value)||0):0,
+      promoPorCantidad:$('fpromocant').checked,
+      preciosPorCantidad:$('fpromocant').checked?tramosPromo.filter(t=>t.cantidad>1 && t.precio>0):[],
       orden:parseInt($('forden').value)||99,
       categoria:$('fcat').value,
       subrubro:subrubroVal,
@@ -340,15 +675,66 @@ async function cargar(){
   $('lista').innerHTML='<div class="empty">Cargando...</div>';
   const snap=await db.collection('productos').orderBy('fecha','desc').get();
   const prods=snap.docs.map(d=>({id:d.id,...d.data()}));
-  $('lista-title').textContent=`Productos (${prods.length})`;
   window._prods=prods;
-  if(!prods.length){$('lista').innerHTML='<div class="empty">No hay productos todavía</div>';return;}
+  if(!prods.length){$('lista-title').textContent='Productos (0)';$('lista').innerHTML='<div class="empty">No hay productos todavía</div>';return;}
+  aplicarFiltros();
+}
+
+function updateFiltroSubrubro(valorActual){
+  const rubro=$('ffcat').value;
+  const sel=$('ffsubrubro');
+  const opciones=getSubrubrosDisponibles(rubro);
+  sel.innerHTML='<option value="">Todos los subrubros</option>'
+    +opciones.map(o=>`<option>${o}</option>`).join('');
+  if(valorActual && opciones.includes(valorActual)){sel.value=valorActual;}
+  else{sel.value='';}
+}
+
+function rubroOSubrubroActivo(){
+  return !!($('ffcat').value || $('ffsubrubro').value || $('ffcuotas').value);
+}
+
+function toggleFiltroCuotasN(){
+  const esSi=$('ffcuotas').value==='si';
+  $('ffcuotasN-wrap').style.display=esSi?'block':'none';
+  if(!esSi)$('ffcuotasN').value='';
+}
+
+function limpiarFiltros(){
+  $('ffcat').value='';
+  $('ffcuotas').value='';
+  $('ffcuotasN').value='';
+  toggleFiltroCuotasN();
+  updateFiltroSubrubro();
+  aplicarFiltros();
+}
+
+function aplicarFiltros(){
+  const rubro=$('ffcat').value;
+  const subrubro=$('ffsubrubro').value;
+  const cuotas=$('ffcuotas').value;
+  const cuotasN=$('ffcuotasN').value;
+  let prods=window._prods||[];
+  if(rubro)prods=prods.filter(p=>p.categoria===rubro);
+  if(subrubro)prods=prods.filter(p=>p.subrubro===subrubro);
+  if(cuotas==='si')prods=prods.filter(p=>!!p.cuotasHabilitado);
+  if(cuotas==='no')prods=prods.filter(p=>!p.cuotasHabilitado);
+  if(cuotas==='si'&&cuotasN)prods=prods.filter(p=>String(p.cuotasCantidad||'')===cuotasN);
+  renderLista(prods);
+}
+
+function renderLista(prods){
+  const total=(window._prods||[]).length;
+  $('lista-title').textContent=rubroOSubrubroActivo()
+    ?`Productos (${prods.length} de ${total})`
+    :`Productos (${total})`;
+  if(!prods.length){$('lista').innerHTML='<div class="empty">No hay productos que coincidan con el filtro</div>';return;}
   $('lista').innerHTML=prods.map(p=>`
     <div class="prod-item">
       <div class="prod-thumb">${p.fotoUrl?`<img src="${p.fotoUrl}" alt="${p.nombre}"/>`:'✦'}</div>
       <div class="prod-info">
         <div class="prod-name">${p.nombre||'—'}</div>
-        <div class="prod-sub">${p.categoria||''}${p.subrubro?' · '+p.subrubro:''} · ${p.modelo||''} · $${p.precio?Number(p.precio).toLocaleString('es-AR'):0}</div>
+        <div class="prod-sub">${p.categoria||''}${p.subrubro?' · '+p.subrubro:''} · ${p.modelo||''} · $${p.precio?Number(p.precio).toLocaleString('es-AR'):0}${p.cuotasHabilitado&&p.cuotasCantidad?' · '+p.cuotasCantidad+' cuotas':''}</div>
         <div class="prod-sub" style="margin-top:2px">Talles: ${p.talle||'—'} &nbsp;·&nbsp; Colores: ${p.color||'—'}</div>
         <div class="prod-acts">
           <button class="abtn abtn-ed" onclick="editar('${p.id}')">Editar</button>
@@ -376,6 +762,13 @@ function editar(id){
   $('ftalle').value=p.talle||'';
   $('fprecio').value=p.precio||'';
   $('fprecio2').value=p.precio2||'';
+  $('fcuotas').checked=!!p.cuotasHabilitado;
+  $('fcuotasN').value=p.cuotasCantidad||'3';
+  $('fpreciotransf').value=p.precioTransferencia||'';
+  toggleCuotas();
+  $('fpromocant').checked=!!p.promoPorCantidad;
+  tramosPromo=(p.preciosPorCantidad&&p.preciosPorCantidad.length)?p.preciosPorCantidad.filter(t=>t.cantidad>1).map(t=>({cantidad:t.cantidad,precio:t.precio})):[];
+  togglePromoCant();
   $('fcat').value=p.categoria||'Pantalones';
   updateSubrubros(p.subrubro||'');
   $('fprov').value=p.proveedor||'';
@@ -393,6 +786,117 @@ async function eliminar(id){
   if(!confirm('¿Eliminar este producto?'))return;
   await db.collection('productos').doc(id).delete();
   cargar();
+}
+
+/* ===== RENOMBRAR / ELIMINAR RUBRO O SUBRUBRO ===== */
+function toggleRenameCard(){
+  const c=$('rename-card');
+  const mostrar=c.style.display==='none';
+  c.style.display=mostrar?'block':'none';
+  if(mostrar){
+    $('ren-tipo').value='rubro';
+    $('ren-nuevo').value='';
+    renPoblarRubros();
+    renPoblarValores();
+  }
+}
+function rubrosExistentes(){
+  return [...new Set((window._prods||[]).map(p=>p.categoria||'').filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+}
+function renPoblarRubros(){
+  const sel=$('ren-rubro');
+  const valActual=sel.value;
+  sel.innerHTML=rubrosExistentes().map(r=>`<option>${r}</option>`).join('');
+  if(valActual && sel.querySelector(`option[value="${CSS.escape(valActual)}"]`))sel.value=valActual;
+}
+function renPoblarValores(){
+  const tipo=$('ren-tipo').value;
+  const esSub=tipo==='subrubro';
+  $('ren-rubro-wrap').style.display=esSub?'block':'none';
+  $('ren-valor-label').textContent=esSub?'Subrubro a renombrar':'Rubro a renombrar';
+  $('btn-ren-eliminar').style.display=esSub?'inline-block':'none';
+  if(esSub && !$('ren-rubro').options.length)renPoblarRubros();
+  const sel=$('ren-valor');
+  if(!esSub){
+    sel.innerHTML=rubrosExistentes().map(r=>`<option>${r}</option>`).join('');
+  }else{
+    const rubro=$('ren-rubro').value;
+    const opciones=getSubrubrosDisponibles(rubro);
+    sel.innerHTML=opciones.map(o=>`<option>${o}</option>`).join('');
+  }
+  renContarProductos();
+}
+function renContarProductos(){
+  const tipo=$('ren-tipo').value;
+  const valor=$('ren-valor').value;
+  let n=0;
+  if(!valor){$('ren-count').textContent='';return;}
+  if(tipo==='rubro'){
+    n=(window._prods||[]).filter(p=>(p.categoria||'')===valor).length;
+  }else{
+    const rubro=$('ren-rubro').value;
+    n=(window._prods||[]).filter(p=>(p.categoria||'')===rubro && (p.subrubro||'').trim()===valor).length;
+  }
+  $('ren-count').textContent=n===0
+    ? 'Ningún producto usa este valor actualmente (se puede eliminar).'
+    : n+' producto'+(n===1?'':'s')+' usa'+(n===1?'':'n')+' este valor.';
+}
+function renProductosCoincidentes(){
+  const tipo=$('ren-tipo').value;
+  const valor=$('ren-valor').value;
+  if(tipo==='rubro'){
+    return (window._prods||[]).filter(p=>(p.categoria||'')===valor);
+  }
+  const rubro=$('ren-rubro').value;
+  return (window._prods||[]).filter(p=>(p.categoria||'')===rubro && (p.subrubro||'').trim()===valor);
+}
+async function renombrarCategoria(){
+  const tipo=$('ren-tipo').value;
+  const valorViejo=$('ren-valor').value;
+  const valorNuevo=$('ren-nuevo').value.trim();
+  if(!valorViejo){alert('Elegí qué renombrar.');return;}
+  if(!valorNuevo){alert('Escribí el nuevo nombre.');return;}
+  if(valorNuevo===valorViejo){alert('El nuevo nombre es igual al actual.');return;}
+  const prods=renProductosCoincidentes();
+  if(!confirm(`¿Renombrar "${valorViejo}" a "${valorNuevo}"?\nSe van a actualizar ${prods.length} producto(s).`))return;
+  if(prods.length){
+    const batch=db.batch();
+    prods.forEach(p=>{
+      const ref=db.collection('productos').doc(p.id);
+      if(tipo==='rubro')batch.update(ref,{categoria:valorNuevo});
+      else batch.update(ref,{subrubro:valorNuevo});
+    });
+    await batch.commit();
+  }
+  if(tipo==='subrubro'){
+    const rubro=$('ren-rubro').value;
+    if(SUBRUBROS_MAP[rubro]){
+      const i=SUBRUBROS_MAP[rubro].indexOf(valorViejo);
+      if(i>-1)SUBRUBROS_MAP[rubro][i]=valorNuevo;
+    }
+  }
+  alert('Listo, se renombró correctamente.');
+  $('ren-nuevo').value='';
+  await cargar();
+  renPoblarValores();
+}
+function eliminarCategoria(){
+  const tipo=$('ren-tipo').value;
+  const valor=$('ren-valor').value;
+  if(!valor){alert('Elegí qué eliminar.');return;}
+  const n=renProductosCoincidentes().length;
+  if(n>0){alert('No se puede eliminar: todavía hay '+n+' producto(s) usando este valor. Primero renombralos o reasignalos a otro subrubro.');return;}
+  if(!confirm(`¿Eliminar "${valor}" de la lista? No hay productos usándolo, así que no afecta el catálogo.`))return;
+  if(tipo==='subrubro'){
+    const rubro=$('ren-rubro').value;
+    if(SUBRUBROS_MAP[rubro]){
+      const i=SUBRUBROS_MAP[rubro].indexOf(valor);
+      if(i>-1)SUBRUBROS_MAP[rubro].splice(i,1);
+    }
+  }
+  alert('Eliminado.');
+  renPoblarValores();
 }
 </script>
 </body>
