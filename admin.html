@@ -106,6 +106,7 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <button class="btn btn-ghost btn-sm" onclick="toggleBanners()">🖼 Banners</button>
       <button class="btn btn-ghost btn-sm" onclick="toggleOrdenRubros()">↕ Orden de rubros</button>
       <button class="btn btn-ghost btn-sm" onclick="toggleRenameCard()">🔤 Renombrar categorías</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleLandings()">🔗 Landings</button>
       <button class="btn btn-solid btn-sm" onclick="toggleForm()">+ Nuevo producto</button>
     </div>
   </div>
@@ -130,6 +131,12 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <img id="bprev3" class="prev-img" alt=""/>
     </div>
     <div class="fr">
+      <label>Banner 5</label>
+      <input id="banner5" placeholder="https://i.ibb.co/....jpg" oninput="previewBanner(5)"/>
+      <img id="bprev5" class="prev-img" alt=""/>
+    </div>
+    <p class="hint" style="margin:-6px 0 14px">El Banner 5 se muestra en la anteúltima posición del carrusel (justo antes del Banner 4).</p>
+    <div class="fr">
       <label>Banner 4</label>
       <input id="banner4" placeholder="https://i.ibb.co/....jpg" oninput="previewBanner(4)"/>
       <img id="bprev4" class="prev-img" alt=""/>
@@ -143,7 +150,7 @@ input:checked+.tslide:before{transform:translateX(16px)}
   <!-- ORDEN DE RUBROS Y SUBRUBROS -->
   <div class="form-card" id="orden-card" style="display:none">
     <h2>Orden de rubros en el catálogo</h2>
-    <p class="hint" style="margin-bottom:14px">Este orden define en qué secuencia aparecen los productos agrupados cuando alguien mira "Todos" en el catálogo (el menú desplegable siempre se muestra alfabético, esto no lo afecta). Usá las flechas para mover un rubro hacia arriba o abajo. Si aparece un rubro nuevo que todavía no ordenaste, se agrega solo al final (por orden alfabético) hasta que lo acomodes. Con el botón "☆ Nuevo" marcás un rubro o subrubro como novedad: le agrega la etiqueta "Nuevo" y lo sube arriba de todo, tanto en el menú desplegable como en la grilla, sin necesidad de moverlo a mano.</p>
+    <p class="hint" style="margin-bottom:14px">Este orden define en qué secuencia aparecen los productos agrupados cuando alguien mira "Todos" en el catálogo (el menú desplegable siempre se muestra alfabético, esto no lo afecta). Usá las flechas para mover un rubro hacia arriba o abajo. Si aparece un rubro nuevo que todavía no ordenaste, se agrega solo al final (por orden alfabético) hasta que lo acomodes. Con el botón "☆ Nuevo" marcás un rubro o subrubro como novedad: en el menú desplegable del catálogo le agrega la etiqueta "Nuevo" y lo sube arriba de todo, sin necesidad de moverlo a mano. Esto solo afecta el menú desplegable — el orden de la grilla de "Todos" sigue siendo el de más arriba, sin cambios.</p>
     <div id="orden-lista"></div>
 
     <h2 style="margin-top:26px">Orden de subrubros</h2>
@@ -190,6 +197,47 @@ input:checked+.tslide:before{transform:translateX(16px)}
       <button class="btn btn-ghost" onclick="toggleRenameCard()">Cerrar</button>
       <button class="btn btn-ghost" id="btn-ren-eliminar" style="border-color:#f5c1c1;color:#b03030" onclick="eliminarCategoria()">Eliminar (solo si no tiene productos)</button>
       <button class="btn btn-solid" onclick="renombrarCategoria()">Renombrar</button>
+    </div>
+  </div>
+
+  <!-- LANDINGS -->
+  <div class="form-card" id="landings-card" style="display:none">
+    <h2>Landings para promos</h2>
+    <p class="hint" style="margin-bottom:14px">Armá una página con un grupo de productos elegidos (por ejemplo, una promo puntual) y usá su link directo en los anuncios de Meta, WhatsApp o redes, en vez de mandar a la home. Opcionalmente podés poner una landing como página de entrada del catálogo.</p>
+    <div id="landings-lista"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="nuevaLanding()">+ Nueva landing</button>
+
+    <div id="landing-form" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:18px">
+      <h2 id="landing-form-title" style="font-size:16px">Nueva landing</h2>
+      <div class="fr">
+        <label>Nombre</label>
+        <input id="lname" placeholder="Ej: Promo Gym Aura" oninput="landingSlugAuto()"/>
+      </div>
+      <div class="fr">
+        <label>Link (se genera solo, lo podés editar)</label>
+        <input id="lslug" placeholder="promo-gym-aura" oninput="this.dataset.touched='1';updateLandingUrlPreview()"/>
+        <p class="hint" id="landing-url-preview"></p>
+      </div>
+      <div class="fr">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;color:var(--brand)">
+          <input type="checkbox" id="lhome" style="width:auto;accent-color:var(--brand)"/>
+          Usar como página de entrada del catálogo (home)
+        </label>
+        <p class="hint">Si la activás, quien entre al catálogo sin elegir nada va a ver esta landing primero. Solo puede haber una activa a la vez.</p>
+      </div>
+      <div class="fr">
+        <label>Productos incluidos (<span id="landing-count">0</span> seleccionados)</label>
+        <input id="landing-buscar-prod" placeholder="Buscar producto por nombre..." oninput="renderLandingProdPicker()" style="margin-bottom:8px"/>
+        <div id="landing-prod-picker" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px;background:#fff"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn btn-ghost" onclick="cancelarLanding()">Cancelar</button>
+        <button class="btn btn-solid" id="btn-guardar-landing" onclick="guardarLanding()">Guardar landing</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-ghost" onclick="toggleLandings()">Cerrar</button>
     </div>
   </div>
 
@@ -409,7 +457,7 @@ async function cargarBanners(){
   try{
     const doc=await db.collection('config').doc('banners').get();
     const d=doc.exists?doc.data():{};
-    [1,2,3,4].forEach(n=>{
+    [1,2,3,4,5].forEach(n=>{
       $('banner'+n).value=d['banner'+n]||'';
       previewBanner(n);
     });
@@ -425,6 +473,7 @@ async function guardarBanners(){
       banner2:$('banner2').value.trim(),
       banner3:$('banner3').value.trim(),
       banner4:$('banner4').value.trim(),
+      banner5:$('banner5').value.trim(),
     };
     await db.collection('config').doc('banners').set(data,{merge:true});
     alert('Banners guardados. Ya se actualizaron en el catálogo.');
@@ -897,6 +946,157 @@ function eliminarCategoria(){
   }
   alert('Eliminado.');
   renPoblarValores();
+}
+
+/* ===== LANDINGS ===== */
+let landingsCache=[];
+let landingEditId=null;
+let landingProdsSel=new Set();
+
+function toggleLandings(){
+  const c=$('landings-card');
+  if(c.style.display==='none'){c.style.display='block';cargarLandings();}
+  else{c.style.display='none';}
+}
+
+function slugify(s){
+  return (s||'').toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
+function landingSlugAuto(){
+  if(!$('lslug').dataset.touched){
+    $('lslug').value=slugify($('lname').value);
+  }
+  updateLandingUrlPreview();
+}
+
+function updateLandingUrlPreview(){
+  const slug=slugify($('lslug').value);
+  $('landing-url-preview').textContent=slug?`Link: catalogo.html?landing=${slug}`:'';
+}
+
+async function cargarLandings(){
+  $('landings-lista').innerHTML='<div class="empty">Cargando...</div>';
+  try{
+    const snap=await db.collection('landings').orderBy('nombre').get();
+    landingsCache=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderLandingsLista();
+  }catch(e){console.error(e);$('landings-lista').innerHTML='<div class="empty">Error al cargar landings.</div>';}
+}
+
+function renderLandingsLista(){
+  if(!landingsCache.length){$('landings-lista').innerHTML='<div class="empty">Todavía no creaste ninguna landing.</div>';return;}
+  $('landings-lista').innerHTML=landingsCache.map(l=>`
+    <div class="prod-item">
+      <div class="prod-info">
+        <div class="prod-name">${l.nombre||'(sin nombre)'} ${l.esHome?'<span class="badge badge-on">Home</span>':''}</div>
+        <div class="prod-sub">${(l.productos||[]).length} producto(s) · catalogo.html?landing=${l.id}</div>
+        <div class="prod-acts">
+          <button class="abtn abtn-ed" onclick="editarLanding('${esc(l.id)}')">Editar</button>
+          <button class="abtn abtn-del" onclick="eliminarLanding('${esc(l.id)}')">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function nuevaLanding(){
+  landingEditId=null;
+  landingProdsSel=new Set();
+  $('lname').value='';
+  $('lslug').value='';
+  $('lslug').dataset.touched='';
+  $('lhome').checked=false;
+  $('landing-buscar-prod').value='';
+  $('landing-form-title').textContent='Nueva landing';
+  $('landing-form').style.display='block';
+  updateLandingUrlPreview();
+  renderLandingProdPicker();
+  $('landing-form').scrollIntoView({behavior:'smooth'});
+}
+
+function cancelarLanding(){
+  $('landing-form').style.display='none';
+  landingEditId=null;
+}
+
+function editarLanding(id){
+  const l=landingsCache.find(x=>x.id===id);
+  if(!l)return;
+  landingEditId=id;
+  landingProdsSel=new Set(l.productos||[]);
+  $('lname').value=l.nombre||'';
+  $('lslug').value=id;
+  $('lslug').dataset.touched='1';
+  $('lhome').checked=!!l.esHome;
+  $('landing-buscar-prod').value='';
+  $('landing-form-title').textContent='Editar landing';
+  $('landing-form').style.display='block';
+  updateLandingUrlPreview();
+  renderLandingProdPicker();
+  $('landing-form').scrollIntoView({behavior:'smooth'});
+}
+
+function renderLandingProdPicker(){
+  const cont=$('landing-prod-picker');
+  const q=($('landing-buscar-prod').value||'').trim().toLowerCase();
+  let prods=window._prods||[];
+  if(q)prods=prods.filter(p=>(p.nombre||'').toLowerCase().includes(q));
+  $('landing-count').textContent=landingProdsSel.size;
+  if(!prods.length){cont.innerHTML='<div class="empty">Sin productos.</div>';return;}
+  cont.innerHTML=prods.map(p=>{
+    const checked=landingProdsSel.has(p.id);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleLandingProd('${esc(p.id)}',this.checked)" style="accent-color:var(--brand)"/>
+      <span>${p.nombre||'(sin nombre)'} <span style="color:var(--muted);font-size:11px">· ${p.categoria||''}</span></span>
+    </label>`;
+  }).join('');
+}
+
+function toggleLandingProd(id,checked){
+  if(checked)landingProdsSel.add(id);else landingProdsSel.delete(id);
+  $('landing-count').textContent=landingProdsSel.size;
+}
+
+async function guardarLanding(){
+  const nombre=$('lname').value.trim();
+  if(!nombre){alert('Ponele un nombre a la landing.');return;}
+  const slug=slugify($('lslug').value)||slugify(nombre);
+  if(!slug){alert('No se pudo generar el link. Probá con otro nombre.');return;}
+  if(!landingProdsSel.size && !confirm('No seleccionaste ningún producto. ¿Guardar igual?'))return;
+  const btn=$('btn-guardar-landing');
+  btn.disabled=true;btn.textContent='Guardando...';
+  try{
+    if(slug!==landingEditId){
+      const existe=await db.collection('landings').doc(slug).get();
+      if(existe.exists){alert('Ya existe una landing con ese link. Elegí otro nombre o editá el link.');btn.disabled=false;btn.textContent='Guardar landing';return;}
+    }
+    const esHome=$('lhome').checked;
+    if(esHome){
+      const homeSnap=await db.collection('landings').where('esHome','==',true).get();
+      const batch=db.batch();
+      homeSnap.docs.forEach(d=>{if(d.id!==slug)batch.update(d.ref,{esHome:false});});
+      await batch.commit();
+    }
+    const data={nombre,productos:[...landingProdsSel],esHome,fecha:firebase.firestore.FieldValue.serverTimestamp()};
+    if(landingEditId && landingEditId!==slug){
+      await db.collection('landings').doc(slug).set(data);
+      await db.collection('landings').doc(landingEditId).delete();
+    }else{
+      await db.collection('landings').doc(slug).set(data,{merge:true});
+    }
+    cancelarLanding();
+    cargarLandings();
+  }catch(e){console.error(e);alert('Error al guardar la landing: '+e.message);}
+  btn.disabled=false;btn.textContent='Guardar landing';
+}
+
+async function eliminarLanding(id){
+  if(!confirm('¿Eliminar esta landing? No afecta a los productos, solo borra el link de la promo.'))return;
+  await db.collection('landings').doc(id).delete();
+  cargarLandings();
 }
 </script>
 </body>

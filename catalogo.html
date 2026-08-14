@@ -251,6 +251,10 @@ nav{
 .modal-price-main{font-family:'Lato',sans-serif;font-size:16px;font-weight:700;color:var(--text)}
 .modal-price-old{font-family:'Lato',sans-serif;font-size:17px;color:var(--muted);text-decoration:line-through;margin-left:8px}
 .modal-ws{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--brand);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-family:'Cormorant Garamond',serif;transition:background .15s}
+#inapp-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--ink,#3B2416);color:#fff;font-family:'Lato',sans-serif;font-size:12.5px;line-height:1.4;position:relative;z-index:999}
+#inapp-banner strong{color:var(--gold,#C9A87C)}
+#inapp-banner-close{background:none;border:none;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 4px;opacity:.8}
+#inapp-banner-close:hover{opacity:1}
 .modal-ws svg{position:relative;top:1px}
 .modal-ws:hover{background:var(--brand2)}
 
@@ -322,6 +326,12 @@ footer a:hover{opacity:1}
 </style>
 </head>
 <body>
+
+<!-- AVISO NAVEGADOR IN-APP (Instagram/Facebook) -->
+<div id="inapp-banner" style="display:none">
+  <span id="inapp-banner-text">Para una mejor experiencia, abrí este catálogo en tu navegador ⋅ tocá <strong>••• → Abrir en el navegador</strong></span>
+  <button id="inapp-banner-close" aria-label="Cerrar">✕</button>
+</div>
 
 <!-- NAV -->
 <div class="sticky-top">
@@ -399,6 +409,7 @@ let filtro = 'Todos';
 let subFiltro = 'Todos';
 let busqueda = '';
 let busquedaOriginal = '';
+let landingActivo = null; // {id,nombre,productos:[ids]} — set por ?landing= o por la landing marcada como home
 
 // Colores para tags
 const COLORES_MAP = {
@@ -425,7 +436,9 @@ async function cargarBanners(){
     const doc=await db.collection('config').doc('banners').get();
     if(!doc.exists)return;
     const d=doc.data();
-    banners=[d.banner1,d.banner2,d.banner3,d.banner4].map(u=>(u||'').trim()).filter(Boolean);
+    // El orden acá define el orden de rotación del carrusel; banner5 queda
+    // en la anteúltima posición (justo antes de banner4).
+    banners=[d.banner1,d.banner2,d.banner3,d.banner5,d.banner4].map(u=>(u||'').trim()).filter(Boolean);
     renderBanners();
   }catch(e){console.error('Error al cargar banners',e);}
 }
@@ -516,14 +529,44 @@ async function cargarProductos(){
     await cargarOrdenCategorias();
     const snap = await db.collection('productos').orderBy('fecha','desc').get();
     productos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.activo!==false);
+    const params=new URLSearchParams(location.search);
+    const landingSlug=params.get('landing');
+    if(landingSlug) await cargarLanding(landingSlug);
+    else await cargarLandingHome();
     renderCats();
     renderGrid();
-    const params=new URLSearchParams(location.search);
+    updateTopSection();
     const pid=params.get('producto');
     if(pid && productos.some(p=>p.id===pid)) openModal(pid);
   }catch(e){
     document.getElementById('grid').innerHTML='<div class="loading">Error al cargar. Verificá la conexión.</div>';
   }
+}
+
+async function cargarLanding(slug){
+  try{
+    const doc=await db.collection('landings').doc(slug).get();
+    if(doc.exists){
+      const d=doc.data();
+      landingActivo={id:doc.id,nombre:d.nombre||'Promo',productos:d.productos||[]};
+    }
+  }catch(e){console.error('Error al cargar landing',e);}
+}
+
+async function cargarLandingHome(){
+  try{
+    const snap=await db.collection('landings').where('esHome','==',true).limit(1).get();
+    if(!snap.empty){
+      const doc=snap.docs[0];
+      const d=doc.data();
+      landingActivo={id:doc.id,nombre:d.nombre||'Promo',productos:d.productos||[]};
+    }
+  }catch(e){console.error('Error al cargar landing home',e);}
+}
+
+function salirLanding(){
+  landingActivo=null;
+  setFiltro('Todos');
 }
 
 function esc(s){return String(s).replace(/'/g,"\\'");}
@@ -647,25 +690,54 @@ function irInicio(){
   setFiltro('Todos');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function abrirWS(url){
+  if(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+    sessionStorage.setItem('volvioDeWS','1');
+    location.href = url;
+  }else{
+    window.open(url, '_blank');
+  }
+}
+(function(){
+  const ua=navigator.userAgent||'';
+  const esInApp=/Instagram|FBAN|FBAV/i.test(ua);
+  const volvioDeWS=sessionStorage.getItem('volvioDeWS')==='1';
+  if(!esInApp || !volvioDeWS) return;
+  sessionStorage.removeItem('volvioDeWS');
+  const banner=document.getElementById('inapp-banner');
+  if(!banner) return;
+  const esIOS=/iPhone|iPad|iPod/i.test(ua);
+  const texto=document.getElementById('inapp-banner-text');
+  texto.innerHTML = esIOS
+    ? 'Para que WhatsApp funcione mejor, tocá <strong>••• (arriba a la derecha) → Abrir en Safari</strong>'
+    : 'Para que WhatsApp funcione mejor, tocá <strong>⋮ (arriba a la derecha) → Abrir en Chrome</strong>';
+  banner.style.display='flex';
+  document.getElementById('inapp-banner-close').addEventListener('click',()=>{
+    banner.style.display='none';
+  });
+})();
 function irContacto(){
   if(typeof fbq!=='undefined')fbq('track','Contact');
   const msg=encodeURIComponent(`Hola AURA Style! ✨\nQuería hacerte una consulta.`);
-  window.open(`https://wa.me/${WS}?text=${msg}`,'_blank');
+  abrirWS(`https://wa.me/${WS}?text=${msg}`);
 }
 
 function setFiltro(c){
+  landingActivo=null;
   filtro=c;subFiltro='Todos';
   busqueda='';busquedaOriginal='';
   const si=document.getElementById('search-input');if(si)si.value='';
   renderCats();renderGrid();updateTopSection();
 }
 function setSubFiltro(s){
+  landingActivo=null;
   subFiltro=s;
   busqueda='';busquedaOriginal='';
   const si=document.getElementById('search-input');if(si)si.value='';
   renderCats();renderGrid();updateTopSection();
 }
 function setBusqueda(v){
+  landingActivo=null;
   busqueda=v.trim().toLowerCase();
   busquedaOriginal=v.trim();
   if(busqueda){filtro='Todos';subFiltro='Todos';}
@@ -675,12 +747,14 @@ function setBusqueda(v){
 }
 
 function ordenarProductosGrid(lista){
-  let catsOrden=ordenarConPrioridad([...new Set(productos.map(p=>p.categoria||'Otros'))],ordenManualRubros);
-  catsOrden=conNovedadesArriba(catsOrden,nuevosRubros);
+  // NOTA: acá NO se aplican las novedades ("Nuevo") a propósito — esa etiqueta y el
+  // "subir arriba de todo" son solo para el menú desplegable (ver renderCats/
+  // renderSubsPanel). El orden de la grilla de "Todos" sigue el orden manual de
+  // rubros/subrubros de siempre, sin verse afectado por las marcas de novedad.
+  const catsOrden=ordenarConPrioridad([...new Set(productos.map(p=>p.categoria||'Otros'))],ordenManualRubros);
   const subsOrdenPorCat={};
   catsOrden.forEach(c=>{
-    let subs=ordenarConPrioridad([...new Set(productos.filter(p=>(p.categoria||'Otros')===c && p.subrubro).map(p=>p.subrubro.trim()))],subOrdenGuardado[c]||[]);
-    subsOrdenPorCat[c]=conNovedadesArriba(subs,nuevosSub[c]||[]);
+    subsOrdenPorCat[c]=ordenarConPrioridad([...new Set(productos.filter(p=>(p.categoria||'Otros')===c && p.subrubro).map(p=>p.subrubro.trim()))],subOrdenGuardado[c]||[]);
   });
   return lista.slice().sort((a,b)=>{
     const ca=a.categoria||'Otros', cb=b.categoria||'Otros';
@@ -702,16 +776,20 @@ function renderGrid(){
       const texto=(p.nombre||'').toLowerCase();
       return texto.includes(busqueda);
     });
+  }else if(landingActivo){
+    // respeta el orden en que se eligieron los productos al armar la landing
+    show=landingActivo.productos.map(id=>productos.find(p=>p.id===id)).filter(Boolean);
   }else{
     show=(filtro==='Todos'?productos:productos.filter(p=>(p.categoria||'Otros')===filtro));
     if(filtro!=='Todos' && subFiltro!=='Todos'){
       show=show.filter(p=>(p.subrubro||'').trim()===subFiltro);
     }
   }
-  show=ordenarProductosGrid(show);
+  if(!landingActivo) show=ordenarProductosGrid(show);
   if(!show.length){
     let msg='No hay productos en esta categoría.';
     if(busqueda) msg='No hay productos que coincidan con tu búsqueda.';
+    else if(landingActivo) msg='Esta promo todavía no tiene productos cargados.';
     else if(!productos.length) msg='No se pudieron cargar los productos. Revisá tu conexión y volvé a intentar.';
     document.getElementById('grid').innerHTML=`<div class="loading">${msg}</div>`;
     return;
@@ -838,7 +916,7 @@ function closeModal(){document.getElementById('modal-ov').classList.remove('open
 function sendBannerWS(){
   if(typeof fbq!=='undefined')fbq('track','Contact');
   const msg=encodeURIComponent(`Hola AURA Style! ✨\nVi la promo del catálogo y quiero más info.`);
-  window.open(`https://wa.me/${WS}?text=${msg}`,'_blank');
+  abrirWS(`https://wa.me/${WS}?text=${msg}`);
 }
 
 function sendWS(id){
@@ -850,7 +928,7 @@ Me interesa:
 *${p.nombre}* (${p.modelo||''})
 ${precio}
 ¿Me podés dar más info?`);
-  window.open(`https://wa.me/${WS}?text=${msg}`,'_blank');
+  abrirWS(`https://wa.me/${WS}?text=${msg}`);
 }
 
 function fmtPrecio(p){return '$'+Number(p).toLocaleString('es-AR');}
@@ -904,7 +982,7 @@ function shareProduct(id){
   if(navigator.share){
     navigator.share({title:p.nombre,text:texto,url:link}).catch(()=>{});
   }else{
-    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`,'_blank');
+    abrirWS(`https://wa.me/?text=${encodeURIComponent(texto)}`);
   }
 }
 
